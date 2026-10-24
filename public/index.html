@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#9b2d26">
+  <meta name="description" content="KMINGO 고객의 실제 피드백으로 다음 행동을 바꾸는 판매 루프">
+  <title>KMINGO — 다음 한 끼 루프</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#workspace">작업 공간으로 이동</a>
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="KMINGO 루프 홈">kmingo<span class="brand-dot">.</span><span class="brand-caption">NEXT MEAL LOOP</span></a>
+    <div class="header-actions"><span class="saved-indicator" id="connection-status"><i></i> 연결 중</span><button class="button button-quiet" id="export-button" disabled>기록 내보내기 <span aria-hidden="true">↗</span></button></div>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-copy"><p class="eyebrow">ONE JAR. A CONTINUING CONVERSATION.</p><h1 id="hero-title">다음 한 끼가,<br><em>다음 행동</em>을 바꿉니다.</h1><p class="hero-description">고객의 질문에서 시작해, 실제 반응으로 한 번 더.<br>한 병의 고추장과 함께 배우는 KMINGO의 판매 루프.</p><div class="loop-path" aria-label="루프 단계"><span>발견</span><b>→</b><span>제안</span><b>→</b><span>피드백</span><b>→</b><span class="path-final">다음 행동 ↻</span></div></div>
+      <div class="hero-art" aria-hidden="true"><div class="art-orbit orbit-one"></div><div class="art-orbit orbit-two"></div><span class="art-note note-top">One jar.<br>Many next meals.</span><div class="jar"><div class="jar-lid"></div><div class="jar-body"><div class="jar-shine"></div><div class="jar-label"><span class="jar-label-top">THE NEXT MEAL STARTS HERE</span><strong>kmingo.</strong><span class="jar-hangul">고추장</span><span class="jar-label-bottom">A LITTLE HEAT. A NEW BEGINNING.</span></div></div></div><div class="art-seal">고추장<br><span>GOCHUJANG</span></div><span class="art-caption">한 병의 다음 한 끼</span></div>
+    </section>
+
+    <section class="metrics-bar" aria-label="검증된 활동 지표" id="metrics"><div><strong>—</strong><span>조사한 기회</span></div><div><strong>—</strong><span>직접 고객 응답</span></div><div><strong>—</strong><span>파트너 응답</span></div><div><strong>—</strong><span>동료 피드백</span></div><div><strong>—</strong><span>확인 주문</span></div></section>
+    <div id="global-status" class="global-status" role="status" aria-live="polite"></div>
+
+    <section class="workspace" id="workspace" aria-label="판매 루프 작업 공간">
+      <aside class="leads-panel">
+        <div class="panel-heading"><div><p class="eyebrow">01 / DISCOVER</p><h2>가능성의 시작점</h2></div><button class="icon-button" id="add-lead-button" aria-label="새 기회 추가" title="새 기회 추가">+</button></div>
+        <p class="section-description">공개 질문과 협업 후보를 하나씩 확인해요.</p>
+        <div class="filter-tabs" role="group" aria-label="기회 필터"><button type="button" data-filter="priority" class="active" aria-pressed="true">우선 3</button><button type="button" data-filter="all" aria-pressed="false">전체 10</button><button type="button" data-filter="consumer" aria-pressed="false">고객 질문</button><button type="button" data-filter="partner" aria-pressed="false">협업 후보</button></div>
+        <div id="lead-list" class="lead-list" aria-label="기회 목록"><div class="empty-state">기회를 불러오고 있습니다.</div></div>
+        <div class="research-note"><span aria-hidden="true">↗</span><p>공개 질문은 구매 확정이 아니에요.<br>관찰한 사실과 실제 응답을 구분합니다.</p></div>
+      </aside>
+
+      <div class="detail-column">
+        <section class="card lead-detail" aria-labelledby="detail-name"><div class="detail-topline"><span class="eyebrow">SELECTED OPPORTUNITY</span><span id="lead-type" class="tag">—</span></div><h2 id="detail-name">기회를 선택해 주세요</h2><p id="lead-evidence" class="evidence-text"></p><div class="source-row"><a id="lead-source" target="_blank" rel="noopener noreferrer" hidden>원문에서 확인 <span aria-hidden="true">↗</span></a><span id="lead-date"></span></div><p class="verification-note" id="lead-verification"></p><div class="fact-chips" id="lead-facts"></div></section>
+
+        <section class="card feedback-card" aria-labelledby="feedback-title"><div class="section-title-row"><div><p class="eyebrow">02 / LISTEN</p><h2 id="feedback-title">실제로 들은 이야기를 남겨요.</h2></div><span class="step-marker">01</span></div><p class="section-description">누가, 어떤 상황에서 한 말인지 기록하면 다음 제안이 달라집니다.</p>
+          <form id="feedback-form">
+            <div class="field-row"><div class="field"><label for="feedback-source-kind">피드백 출처</label><select id="feedback-source-kind" name="sourceKind"><option value="customer">직접 고객 응답</option><option value="partner">파트너 응답</option><option value="peer">동료 / 현장 검토</option><option value="public" selected>공개 게시물</option></select></div><div class="field"><label for="feedback-source-url">근거 링크 <span class="optional">선택</span></label><input type="url" id="feedback-source-url" name="sourceUrl" placeholder="https://" maxlength="2000"></div></div>
+            <div class="field"><label for="feedback-text">실제 피드백 <span class="required">*</span></label><textarea id="feedback-text" name="text" rows="3" placeholder="고객이 직접 한 말이나 공개 글에서 확인한 내용을 적어 주세요." required maxlength="4000" aria-describedby="feedback-help"></textarea><span class="field-help" id="feedback-help">가상의 반응은 넣지 않아요. 공개 댓글과 동료 의견은 고객 응답과 따로 집계됩니다.</span></div>
+            <div class="field-row three-col"><div class="field"><label for="jar-status">고추장 보유 상태</label><select id="jar-status" name="jarStatus"><option value="unknown">미확인</option><option value="full">많이 남음</option><option value="low">거의 다 씀</option><option value="none">없음</option></select></div><div class="field"><label for="purchase-intent">구매 의사</label><select id="purchase-intent" name="purchaseIntent"><option value="unknown">미확인</option><option value="yes">있음</option><option value="no">없음</option></select></div><div class="field"><label for="feedback-country">구매 / 배송 국가</label><input id="feedback-country" name="country" placeholder="미확인" maxlength="100"></div></div>
+            <div class="field-row"><div class="field"><label for="feedback-objection">확인된 고민</label><select id="feedback-objection" name="objection"><option value="none">아직 없음 / 미확인</option><option value="time">요리할 시간</option><option value="price">가격</option><option value="heat">맵기</option><option value="ingredients">원재료 / 알레르기</option></select></div><div class="field stop-field"><label class="checkbox-label"><input type="checkbox" id="stop-contact" name="stopContact" disabled><span>고객이 연락 중단을 요청했어요</span></label></div></div>
+            <div class="form-footer"><span id="feedback-status" role="status" aria-live="polite"></span><button type="submit" class="button button-secondary" id="save-feedback-button">피드백 저장 <span aria-hidden="true">＋</span></button></div>
+          </form>
+        </section>
+
+        <section class="loop-controls" aria-labelledby="loop-title"><div><p class="eyebrow">03 / LEARN & REPEAT</p><h2 id="loop-title">다음 행동을 바꿀 차례.</h2><p id="pending-description">새 기록을 읽고 다음 제안을 준비합니다.</p></div><div class="run-controls"><label class="sr-only" for="loop-mode">루프 실행 방식</label><select id="loop-mode"><option value="rules">규칙 기반</option><option value="ai" disabled>AI · 연결 필요</option></select><button class="button button-primary" id="run-loop-button">다음 루프 실행 <span aria-hidden="true">↻</span></button></div></section>
+        <p class="run-help" id="mode-description">규칙 기반 · 저장된 사실에 따라 다음 행동을 정합니다. 외부 메시지는 발송하지 않습니다.</p>
+
+        <section class="card action-card" aria-labelledby="action-title"><div class="section-title-row"><div><p class="eyebrow">THE NEXT BEST STEP</p><h2 id="action-title">다음 제안을 기다리고 있어요.</h2></div><span id="action-kind" class="tag">준비</span></div><p id="action-reason" class="action-reason">루프를 실행하면 선택한 기회의 다음 행동과 이유가 표시됩니다.</p><div class="draft-block"><div class="draft-heading"><span>검토할 문구</span><button type="button" id="copy-draft-button" class="text-button" disabled>복사하기 ↗</button></div><p id="action-copy" class="draft-copy">작성된 문구가 아직 없습니다.</p></div><div class="next-question" id="next-question-wrap" hidden><span>다음에 확인할 질문</span><p id="next-question"></p></div><p class="small-note">발송 전 제품 정보와 대상에게 맞는 표현을 확인해 주세요.</p></section>
+
+        <section class="card passport-card" aria-labelledby="passport-title"><div class="section-title-row"><div><p class="eyebrow">ONE JAR PASSPORT</p><h2 id="passport-title">한 병의 여권</h2></div><div class="passport-stamp" aria-hidden="true">NEXT<br>MEAL</div></div><div class="passport-steps"><div><span class="passport-number">01</span><h3>오늘의 상태</h3><p id="passport-today">확인된 상태를 기다립니다.</p></div><div><span class="passport-number">02</span><h3>실제로 들은 말</h3><p id="passport-feedback">아직 피드백이 없습니다.</p></div><div><span class="passport-number">03</span><h3>다음 한 끼</h3><p id="passport-next">다음 제안을 기다립니다.</p></div></div></section>
+
+        <section class="history-section" aria-labelledby="history-title"><div class="section-title-row"><div><p class="eyebrow">LOOP JOURNAL</p><h2 id="history-title">무엇이, 왜 달라졌을까요?</h2></div><span class="journal-count" id="run-count">0 ROUNDS</span></div><div id="loop-history"><div class="empty-state">첫 루프를 실행하면 이전과 이후의 변화가 여기에 남습니다.</div></div></section>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer"><span class="footer-brand">kmingo.</span><p>한 번의 판매를 넘어, 다음 한 끼로 이어지는 대화.</p><span>ONE JAR, NEXT MEAL © 2026</span></footer>
+
+  <dialog id="add-lead-dialog" aria-labelledby="add-lead-title"><div class="dialog-heading"><div><p class="eyebrow">NEW OPPORTUNITY</p><h2 id="add-lead-title">새로운 시작점을 더해요.</h2></div><button type="button" class="icon-button" id="close-dialog-button" aria-label="닫기">×</button></div><form id="add-lead-form"><div class="field"><label for="new-name">이름 / 질문 제목</label><input id="new-name" name="name" required maxlength="200"></div><div class="field"><label for="new-type">유형</label><select id="new-type" name="type"><option value="consumer">고객 질문</option><option value="partner">협업 후보</option></select></div><div class="field"><label for="new-source">공개 출처 URL</label><input type="url" id="new-source" name="sourceUrl" required maxlength="2000" placeholder="https://"></div><div class="field"><label for="new-evidence">관찰한 사실</label><textarea id="new-evidence" name="evidence" required rows="3" maxlength="4000" placeholder="구매 의사와 추정을 구분해서 기록해 주세요."></textarea></div><p id="add-lead-status" role="status" aria-live="polite"></p><button type="submit" id="create-lead-button" class="button button-primary">기회 추가하기 <span aria-hidden="true">＋</span></button></form></dialog>
+</body>
+</html>
+
