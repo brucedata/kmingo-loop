@@ -1,0 +1,24 @@
+{
+  "name": "kmingo-loop",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "KMINGO next-meal GTM loop: evidence, feedback, AI proposals and an auditable history.",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "node cli.mjs run",
+    "loop": "node cli.mjs run",
+    "status": "node cli.mjs status",
+    "feedback": "node cli.mjs feedback",
+    "add": "node cli.mjs add",
+    "export": "node cli.mjs export",
+    "ui": "node server.mjs",
+    "dev": "node --watch server.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "check": "node --check cli.mjs && node --check server.mjs && node --check public/app.js"
+  },
+  "license": "UNLICENSED"
+}
+
