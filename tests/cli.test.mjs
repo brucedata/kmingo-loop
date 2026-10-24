@@ -68,3 +68,38 @@ test('CLI AI failure is explicit and cannot advance or corrupt the stored run', 
   assert.equal(await readFile(join(baseDir, 'data', 'state.json'), 'utf8'), before);
   assert.equal((await call(['status'])).runCount, 0);
 });
+
+test('CLI campaign commands connect manual evidence to adaptive targets, public daily output and refund correction', async t => {
+  t.mock.timers.enable({ apis: ['Date'], now: new Date('2026-10-24T10:00:00Z') });
+  const { baseDir, call } = await fixture(t);
+  const write = async (name, body) => writeFile(join(baseDir, name), JSON.stringify(body));
+  await call(['run']);
+  await write('response.json', { eventId: 'cli-response-Q04', leadId: 'Q04', sourceKind: 'customer', text: 'Fixture only: 한국 수령·구매 의사 확인', facts: { country: 'KR', deliveryEligible: 'yes', purchaseIntent: 'yes', jarStatus: 'none', dish: '비빔밥' } });
+  await call(['feedback', '--file', 'response.json']);
+  const changed = await call(['run']);
+  assert.equal(changed.nextTargets[0].leadId, 'Q04');
+  await write('activity.json', { activityId: 'cli-activity-Q04', type: 'proposal_sent', leadId: 'Q04', channel: 'manual', variantId: 'next-meal', happenedAt: '2026-10-24T09:00:00Z', evidenceRef: 'private:cli-activity' });
+  await call(['activity', '--file', 'activity.json']);
+  const order = { orderId: 'cli-order-1', customerId: 'cli-customer-1', leadId: 'Q04', activityId: 'cli-activity-Q04', status: 'paid', amountKRW: 25000, paidAt: '2026-10-24T09:30:00Z', evidenceRef: 'private:cli-payment', paymentVerified: true };
+  await write('order.json', order);
+  await call(['order', '--file', 'order.json']);
+  assert.equal((await call(['order', '--file', 'order.json'])).campaign.validOrders, 1);
+  await writeFile(join(baseDir, 'note.txt'), 'PRIVATE_NOTE person@example.com');
+  const daily = await call(['daily', '--date', '2026-10-24', '--note-file', 'note.txt']);
+  assert.equal(daily.campaign.validOrders, 1);
+  assert.ok(!daily.nextTargets.some(target => target.leadId === 'Q04'));
+  const publicFile = await readFile(daily.outputPath, 'utf8');
+  assert.match(publicFile, /1\/10/);
+  assert.doesNotMatch(publicFile, /PRIVATE_NOTE|person@example.com|cli-customer-1|private:cli-payment/);
+  const report = await call(['report']);
+  assert.equal(report.dailyReports.length, 1);
+  const again = await call(['daily', '--date', '2026-10-24', '--note-file', 'note.txt']);
+  assert.equal(again.journalChanged, false);
+  assert.equal(again.revision, 1);
+  await write('refund.json', { ...order, status: 'refunded' });
+  await call(['order', '--file', 'refund.json']);
+  assert.equal((await call(['report'])).summary.validOrders, 0);
+  assert.equal((await call(['status'])).metrics.orders, 0);
+  await assert.rejects(call(['daily', '--date', '2026-10-25']), /미래/);
+  await assert.rejects(call(['daily', '--date']), /옵션 값/);
+});

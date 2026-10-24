@@ -1,0 +1,14 @@
+{
+  "eventId": "REPLACE-feedback-001",
+  "leadId": "Q01",
+  "sourceKind": "customer",
+  "text": "[TEST TEMPLATE] 실제 받은 반응으로 교체한 뒤 사용하세요.",
+  "evidenceRef": "REPLACE-private-response-ref",
+  "isTest": true,
+  "facts": {
+    "jarStatus": "unknown",
+    "purchaseIntent": "unknown",
+    "deliveryEligible": "unknown",
+    "objection": "none"
+  }
+}

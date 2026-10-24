@@ -5,13 +5,19 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { AppError, addLead, recordFeedback, runLoop } from './lib/engine.mjs';
 import { createStore } from './lib/store.mjs';
 import { generateActions } from './lib/openai.mjs';
+import { campaignSummary, recordActivity, recordOrder } from './lib/campaign.mjs';
+import { campaignView, recordDaily, seoulDate, writePublicDaily } from './lib/journal.mjs';
 
 const projectRoot = dirname(fileURLToPath(import.meta.url));
 const usage = {
   commands: [
     'node cli.mjs run [--ai]',
+    'node cli.mjs daily [--date YYYY-MM-DD] [--note-file <private-note.txt>] [--ai]',
+    'node cli.mjs report',
     'node cli.mjs status',
     'node cli.mjs feedback --file <feedback.json>',
+    'node cli.mjs activity --file <activity.json>',
+    'node cli.mjs order --file <order.json>',
     'node cli.mjs add --file <lead.json>',
     'node cli.mjs export [--output <repo-relative.json>]'
   ],
@@ -22,10 +28,33 @@ function parse(argv) {
   const [command = 'status', ...args] = argv;
   if (['help', '--help', '-h'].includes(command) && args.length === 0) return { command: 'help' };
   if (command === 'run' && (args.length === 0 || (args.length === 1 && args[0] === '--ai'))) return { command, mode: args.length ? 'ai' : 'rules' };
+  if (command === 'daily') {
+    const options = { command, mode: 'rules' };
+    const seen = new Set();
+    for (let index = 0; index < args.length; index++) {
+      const flag = args[index];
+      if (!['--ai', '--date', '--note-file'].includes(flag) || seen.has(flag)) throw new AppError('daily 인자가 올바르지 않습니다.');
+      seen.add(flag);
+      if (flag === '--ai') options.mode = 'ai';
+      else {
+        const value = args[++index];
+        if (!value || value.startsWith('--')) throw new AppError('daily 옵션 값이 필요합니다.');
+        options[flag === '--date' ? 'date' : 'noteFile'] = value;
+      }
+    }
+    return options;
+  }
+  if (command === 'report' && args.length === 0) return { command };
   if (command === 'status' && args.length === 0) return { command };
-  if (['feedback', 'add'].includes(command) && args.length === 2 && args[0] === '--file' && args[1]) return { command, file: args[1] };
+  if (['feedback', 'add', 'activity', 'order'].includes(command) && args.length === 2 && args[0] === '--file' && args[1]) return { command, file: args[1] };
   if (command === 'export' && (args.length === 0 || (args.length === 2 && args[0] === '--output' && args[1]))) return { command, output: args[1] };
   throw new AppError('명령 또는 인자가 올바르지 않습니다. node cli.mjs --help를 확인하세요.');
+}
+
+function syncMetrics(state) {
+  const summary = campaignSummary(state);
+  state.metrics = { ...state.metrics, sent: summary.sent, orders: summary.validOrders };
+  return state;
 }
 
 async function readInput(file, baseDir) {
@@ -73,19 +102,44 @@ export async function main(argv = [], { baseDir = projectRoot, stdout = text => 
   const store = createStore(statePath, join(baseDir, 'seed.json'));
   let result;
   if (options.command === 'run') {
-    const state = await store.mutate(current => runLoop(current, { mode: options.mode, generate }));
+    const state = await store.mutate(async current => syncMetrics(await runLoop(current, { mode: options.mode, generate })));
     const run = state.runs.at(-1);
     result = { statePath, runId: run.id, createdAt: run.createdAt, mode: run.mode, aiCalled: run.aiCalled,
       changedCount: run.changes.length, unchangedCount: run.unchangedCount,
+      strategyVersion: state.strategy?.version, strategyChanged: run.strategyChanged,
+      nextTargets: state.strategy?.topTargets ?? [], messageHypothesis: state.strategy?.messageHypothesis ?? null,
+      campaign: campaignSummary(state),
       changes: run.changes.map(change => ({ leadId: change.leadId, before: change.before?.kind ?? null, after: change.after.kind,
         title: change.after.title, copy: change.after.copy, nextQuestion: change.after.nextQuestion, reason: change.reason, feedbackIds: change.feedbackIds })) };
+  } else if (options.command === 'daily') {
+    let note = '';
+    if (options.noteFile) {
+      try { note = await readFile(resolve(baseDir, options.noteFile), 'utf8'); }
+      catch { throw new AppError('운영 메모 파일을 읽지 못했습니다.'); }
+    }
+    const now = new Date().toISOString();
+    let journal;
+    const state = await store.mutate(async current => {
+      const next = syncMetrics(await runLoop(current, { mode: options.mode, generate, now }));
+      journal = recordDaily(next, { date: options.date || seoulDate(now), note, now });
+      return journal.state;
+    });
+    let outputPath;
+    try { outputPath = await writePublicDaily(baseDir, journal.entry); }
+    catch (error) { throw new AppError(`개인 실행 상태와 일지는 저장됐지만 공개 보고서 파일 생성은 실패했습니다. 같은 daily 명령을 다시 실행하세요. ${error instanceof AppError ? error.message : ''}`, 500); }
+    result = { statePath, outputPath, date: journal.entry.date, revision: journal.entry.revision,
+      journalChanged: journal.changed, runId: state.runs.at(-1).id, strategyVersion: state.strategy?.version,
+      improvementReason: journal.entry.improvementReason, nextAction: journal.entry.nextAction,
+      nextTargets: state.strategy?.topTargets ?? [], campaign: campaignSummary(state) };
+  } else if (options.command === 'report') {
+    result = campaignView(await store.read());
   } else if (options.command === 'status') {
     const state = await store.read();
     const processed = new Set(state.leads.flatMap(lead => lead.processedFeedbackIds || []));
     result = { statePath, leadCount: state.leads.length, feedbackCount: state.feedback.length,
-      pendingFeedback: state.feedback.filter(event => !processed.has(event.id)).length, runCount: state.runs.length,
+      pendingFeedback: state.feedback.filter(event => !event.isTest && !processed.has(event.id)).length, runCount: state.runs.length,
       lastRun: state.runs.length ? { id: state.runs.at(-1).id, createdAt: state.runs.at(-1).createdAt, mode: state.runs.at(-1).mode } : null,
-      metrics: state.metrics };
+      metrics: state.metrics, campaign: campaignSummary(state), strategy: state.strategy ?? null };
   } else if (options.command === 'feedback') {
     const body = await readInput(options.file, baseDir);
     const state = await store.mutate(current => recordFeedback(current, body));
@@ -95,6 +149,11 @@ export async function main(argv = [], { baseDir = projectRoot, stdout = text => 
     const body = await readInput(options.file, baseDir);
     const state = await store.mutate(current => addLead(current, body));
     result = { statePath, leadId: state.leads.at(-1).id, leadCount: state.leads.length, pending: true };
+  } else if (['activity', 'order'].includes(options.command)) {
+    const body = await readInput(options.file, baseDir);
+    const operation = options.command === 'activity' ? recordActivity : recordOrder;
+    const state = await store.mutate(current => syncMetrics(operation(current, body)));
+    result = { statePath, recorded: options.command, campaign: campaignSummary(state), pendingStrategyReview: true };
   } else {
     const state = await store.read();
     result = options.output ? { outputPath: await exportFile(baseDir, options.output, state), leadCount: state.leads.length, runCount: state.runs.length } : state;

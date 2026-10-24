@@ -25,6 +25,13 @@
     <section class="metrics-bar" aria-label="검증된 활동 지표" id="metrics"><div><strong>—</strong><span>조사한 기회</span></div><div><strong>—</strong><span>직접 고객 응답</span></div><div><strong>—</strong><span>파트너 응답</span></div><div><strong>—</strong><span>동료 피드백</span></div><div><strong>—</strong><span>확인 주문</span></div></section>
     <div id="global-status" class="global-status" role="status" aria-live="polite"></div>
 
+    <section class="campaign-panel" aria-labelledby="campaign-title">
+      <div class="section-title-row"><div><p class="eyebrow">7-DAY SALES EXPERIMENT</p><h2 id="campaign-title">실제 주문 10건을 향한 기록</h2></div><span class="tag" id="campaign-deadline">캠페인 확인 중</span></div>
+      <div class="campaign-metrics" id="campaign-metrics"><p class="section-description">확인된 주문과 제안 기록을 불러오고 있습니다.</p></div>
+      <div class="campaign-decision"><h3>최근 운영 기록과 개선 이유</h3><p id="campaign-report-date" class="verification-note"></p><p id="campaign-improvement">일일 운영 기록을 기다립니다.</p><p id="campaign-next-action" class="campaign-next-action"></p></div>
+      <p class="small-note">주문은 운영자가 결제 근거를 확인한 기록입니다. 실제 주문 확인·활동 기록·일일 마감은 ROUTINE.md의 CLI로 진행합니다.</p>
+    </section>
+
     <section class="workspace" id="workspace" aria-label="판매 루프 작업 공간">
       <aside class="leads-panel">
         <div class="panel-heading"><div><p class="eyebrow">01 / DISCOVER</p><h2>가능성의 시작점</h2></div><button class="icon-button" id="add-lead-button" aria-label="새 기회 추가" title="새 기회 추가">+</button></div>
@@ -35,13 +42,14 @@
       </aside>
 
       <div class="detail-column">
-        <section class="card lead-detail" aria-labelledby="detail-name"><div class="detail-topline"><span class="eyebrow">SELECTED OPPORTUNITY</span><span id="lead-type" class="tag">—</span></div><h2 id="detail-name">기회를 선택해 주세요</h2><p id="lead-evidence" class="evidence-text"></p><div class="source-row"><a id="lead-source" target="_blank" rel="noopener noreferrer" hidden>원문에서 확인 <span aria-hidden="true">↗</span></a><span id="lead-date"></span></div><p class="verification-note" id="lead-verification"></p><div class="fact-chips" id="lead-facts"></div></section>
+        <section class="card lead-detail" aria-labelledby="detail-name"><div class="detail-topline"><span class="eyebrow">SELECTED OPPORTUNITY</span><span id="lead-type" class="tag">—</span></div><h2 id="detail-name">기회를 선택해 주세요</h2><p id="lead-evidence" class="evidence-text"></p><div class="source-row"><a id="lead-source" target="_blank" rel="noopener noreferrer" hidden>원문에서 확인 <span aria-hidden="true">↗</span></a><span id="lead-date"></span></div><p class="verification-note" id="lead-verification"></p><p class="priority-explanation" id="priority-explanation" hidden></p><div class="fact-chips" id="lead-facts"></div></section>
 
         <section class="card feedback-card" aria-labelledby="feedback-title"><div class="section-title-row"><div><p class="eyebrow">02 / LISTEN</p><h2 id="feedback-title">실제로 들은 이야기를 남겨요.</h2></div><span class="step-marker">01</span></div><p class="section-description">누가, 어떤 상황에서 한 말인지 기록하면 다음 제안이 달라집니다.</p>
           <form id="feedback-form">
             <div class="field-row"><div class="field"><label for="feedback-source-kind">피드백 출처</label><select id="feedback-source-kind" name="sourceKind"><option value="customer">직접 고객 응답</option><option value="partner">파트너 응답</option><option value="peer">동료 / 현장 검토</option><option value="public" selected>공개 게시물</option></select></div><div class="field"><label for="feedback-source-url">근거 링크 <span class="optional">선택</span></label><input type="url" id="feedback-source-url" name="sourceUrl" placeholder="https://" maxlength="2000"></div></div>
             <div class="field"><label for="feedback-text">실제 피드백 <span class="required">*</span></label><textarea id="feedback-text" name="text" rows="3" placeholder="고객이 직접 한 말이나 공개 글에서 확인한 내용을 적어 주세요." required maxlength="4000" aria-describedby="feedback-help"></textarea><span class="field-help" id="feedback-help">가상의 반응은 넣지 않아요. 공개 댓글과 동료 의견은 고객 응답과 따로 집계됩니다.</span></div>
             <div class="field-row three-col"><div class="field"><label for="jar-status">고추장 보유 상태</label><select id="jar-status" name="jarStatus"><option value="unknown">미확인</option><option value="full">많이 남음</option><option value="low">거의 다 씀</option><option value="none">없음</option></select></div><div class="field"><label for="purchase-intent">구매 의사</label><select id="purchase-intent" name="purchaseIntent"><option value="unknown">미확인</option><option value="yes">있음</option><option value="no">없음</option></select></div><div class="field"><label for="feedback-country">구매 / 배송 국가</label><input id="feedback-country" name="country" placeholder="미확인" maxlength="100"></div></div>
+            <div class="field"><label for="delivery-eligible">배송 가능 여부 확인</label><select id="delivery-eligible" name="deliveryEligible"><option value="unknown">미확인</option><option value="yes">배송 가능 확인</option><option value="no">배송 불가 확인</option></select><span class="field-help">보유 상태·구매 의사·배송 정보는 직접 고객 또는 파트너 응답에서 확인한 경우에만 반영합니다.</span></div>
             <div class="field-row"><div class="field"><label for="feedback-objection">확인된 고민</label><select id="feedback-objection" name="objection"><option value="none">아직 없음 / 미확인</option><option value="time">요리할 시간</option><option value="price">가격</option><option value="heat">맵기</option><option value="ingredients">원재료 / 알레르기</option></select></div><div class="field stop-field"><label class="checkbox-label"><input type="checkbox" id="stop-contact" name="stopContact" disabled><span>고객이 연락 중단을 요청했어요</span></label></div></div>
             <div class="form-footer"><span id="feedback-status" role="status" aria-live="polite"></span><button type="submit" class="button button-secondary" id="save-feedback-button">피드백 저장 <span aria-hidden="true">＋</span></button></div>
           </form>

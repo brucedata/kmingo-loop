@@ -1,0 +1,10 @@
+{
+  "activityId": "REPLACE-activity-001",
+  "type": "proposal_sent",
+  "leadId": "Q01",
+  "channel": "manual-review",
+  "variantId": "next-meal",
+  "happenedAt": "2026-10-24T08:00:00+09:00",
+  "evidenceRef": "REPLACE-private-activity-ref",
+  "isTest": true
+}

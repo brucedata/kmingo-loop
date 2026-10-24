@@ -1,0 +1,12 @@
+{
+  "orderId": "REPLACE-order-001",
+  "customerId": "REPLACE-customer-001",
+  "leadId": "Q01",
+  "activityId": "REPLACE-activity-001",
+  "status": "pending",
+  "amountKRW": 0,
+  "paidAt": null,
+  "evidenceRef": "REPLACE-private-payment-ref",
+  "paymentVerified": false,
+  "isTest": true
+}

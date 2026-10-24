@@ -6,6 +6,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { AppError, addLead, recordFeedback, runLoop, validateLoop } from './lib/engine.mjs';
 import { generateActions } from './lib/openai.mjs';
 import { createStore } from './lib/store.mjs';
+import { campaignSummary, recordActivity, recordOrder } from './lib/campaign.mjs';
+import { campaignView, recordDaily, seoulDate, writePublicDaily } from './lib/journal.mjs';
 
 const root = dirname(fileURLToPath(import.meta.url));
 const envPath = join(root, '.env.local');
@@ -15,6 +17,11 @@ const mime = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=u
 function json(res, status, data, extra = {}) {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...extra });
   res.end(JSON.stringify(data));
+}
+function syncMetrics(state) {
+  const summary = campaignSummary(state);
+  state.metrics = { ...state.metrics, sent: summary.sent, orders: summary.validOrders };
+  return state;
 }
 function validateRequest(req) {
   let host;
@@ -45,13 +52,31 @@ export function createApp({ baseDir = root, store = createStore(join(baseDir, 'd
       const pathname = new URL(req.url, 'http://127.0.0.1').pathname;
       if (req.method === 'GET' && pathname === '/api/config') return json(res, 200, { aiAvailable: Boolean(process.env.OPENAI_API_KEY), model: process.env.OPENAI_MODEL || 'gpt-5-mini' });
       if (req.method === 'GET' && pathname === '/api/state') return json(res, 200, await store.read());
+      if (req.method === 'GET' && pathname === '/api/campaign') return json(res, 200, campaignView(await store.read()));
       if (req.method === 'GET' && pathname === '/api/export') return json(res, 200, await store.read(), { 'Content-Disposition': 'attachment; filename="kmingo-loop-state.json"' });
-      if (req.method === 'POST' && ['/api/feedback', '/api/loop', '/api/leads'].includes(pathname)) {
+      if (req.method === 'POST' && ['/api/feedback', '/api/loop', '/api/leads', '/api/activity', '/api/orders', '/api/daily'].includes(pathname)) {
         const body = await readBody(req);
         if (pathname === '/api/feedback') return json(res, 200, await store.mutate(state => recordFeedback(state, body)));
         if (pathname === '/api/leads') return json(res, 201, await store.mutate(state => addLead(state, body)));
+        if (pathname === '/api/activity') return json(res, 200, await store.mutate(state => syncMetrics(recordActivity(state, body))));
+        if (pathname === '/api/orders') return json(res, 200, await store.mutate(state => syncMetrics(recordOrder(state, body))));
+        if (pathname === '/api/daily') {
+          if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).some(key => !['date', 'note', 'mode'].includes(key))) throw new AppError('일지 입력 필드가 올바르지 않습니다.');
+          const mode = validateLoop({ mode: body.mode ?? 'rules' });
+          const now = new Date().toISOString();
+          let journal;
+          const state = await store.mutate(async current => {
+            const next = syncMetrics(await runLoop(current, { mode, generate, now }));
+            journal = recordDaily(next, { date: body.date ?? seoulDate(now), note: body.note ?? '', now });
+            return journal.state;
+          });
+          let outputPath;
+          try { outputPath = await writePublicDaily(baseDir, journal.entry); }
+          catch { throw new AppError('개인 일지는 저장됐지만 공개 보고서 파일 생성은 실패했습니다. 같은 일지 요청을 다시 실행하세요.', 500); }
+          return json(res, 200, { ...campaignView(state), outputPath });
+        }
         const mode = validateLoop(body);
-        return json(res, 200, await store.mutate(state => runLoop(state, { mode, generate })));
+        return json(res, 200, await store.mutate(async state => syncMetrics(await runLoop(state, { mode, generate }))));
       }
       if (pathname.startsWith('/api/')) throw new AppError('API 경로 또는 메서드를 찾을 수 없습니다.', 404);
       if (!['GET', 'HEAD'].includes(req.method)) throw new AppError('지원하지 않는 메서드입니다.', 405);
