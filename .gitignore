@@ -1,0 +1,11 @@
+.env
+.env.*
+!.env.example
+data/
+input/
+exports/
+.key-setup/
+node_modules/
+coverage/
+*.log
+.DS_Store
